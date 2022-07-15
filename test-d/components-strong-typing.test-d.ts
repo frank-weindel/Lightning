@@ -15,7 +15,7 @@ namespace MyComponentA {
 // Direct TemplateSpec properties should not be allowed to be set from the _template
 const t100: lng.Component.Template<MyComponentA.TemplateSpec> = {
   // @ts-expect-error
-  myProperty: 'abc'
+  myProperty: 'abc',
 };
 // Direct properties should instead be of type `undefined`
 // Though it would be better if the direct property key wasn't allowed at all

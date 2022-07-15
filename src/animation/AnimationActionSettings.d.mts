@@ -1,15 +1,12 @@
+import Element from "../tree/Element.mjs";
 import AnimationSettings from "./AnimationSettings.mjs";
 
 declare namespace AnimationActionSettings {
-  /**
-   * Types animations are allowed on
-   */
-  export type AnimatableValueTypes = number | boolean | string;
 
   export type AnimationActionValue =
-    AnimatableValueTypes |
+    Element.AnimatableValueTypes |
     AnimationActionSettings.AnimationActionPointMap |
-    ((progress: number) => AnimatableValueTypes);
+    ((progress: number) => Element.AnimatableValueTypes);
 
   export interface AnimationActionPoint {
     /**
@@ -61,7 +58,7 @@ declare namespace AnimationActionSettings {
      *
      * @defaultValue 0
      */
-    v: AnimatableValueTypes | ((progress: number) => AnimatableValueTypes);
+    v: Element.AnimatableValueTypes | ((progress: number) => Element.AnimatableValueTypes);
   }
 
   /**
@@ -167,13 +164,13 @@ declare namespace AnimationActionSettings {
      * @remarks
      * ???
      */
-    resetValue?: AnimatableValueTypes;
+    resetValue?: Element.AnimatableValueTypes;
     /**
      * Alias for {@link resetValue}
      *
      * @see {@link resetValue}
      */
-    rv?: AnimatableValueTypes;
+    rv?: Element.AnimatableValueTypes;
   }
 }
 

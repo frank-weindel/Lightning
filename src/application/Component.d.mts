@@ -1,6 +1,6 @@
-import Element, { InlineElement, ValidRef } from "../tree/Element.mjs";
+import Element, { InlineElement, IsLoose, ValidRef } from "../tree/Element.mjs";
 import Stage from "../tree/Stage.mjs";
-import Texture from "../tree/Texture.mjs";
+import { Documentation, DollarProp } from "../types/internalTypes.js";
 import Application from "./Application.mjs";
 
 declare namespace Component {
@@ -31,15 +31,20 @@ declare namespace Component {
    * }
    * ```
    */
-  export interface TemplateSpecStrong extends Element.TemplateSpecStrong {
+  export interface TemplateSpecLoose extends Element.TemplateSpecLoose {
+    // Signal types (Components only)
+    $signals: {
+      signal1(arg: number): number,
+      signal2(arg: number): number
+    },
     // !!! Insert component specific things
   }
 
   /**
-   * Loose form of lng.Component.TemplateSpecStrong that allows any additional 'any' properties
+   * Strong form of lng.Component.TemplateSpecLoose that does not allow unknown properties
    */
-  export interface TemplateSpecLoose extends Component.TemplateSpecStrong {
-    [s: string]: any
+  export interface TemplateSpecStrong extends Component.TemplateSpecLoose {
+    $strong: true;
   }
 
   /**
@@ -62,7 +67,7 @@ declare namespace Component {
             ?
               Template<InstanceType<InstanceType<T>['__$type_TemplateSpec'][P]>['__$type_TemplateSpec']>
             :
-              InstanceType<T>['__$type_TemplateSpec'][P]
+              InstanceType<T> ['__$type_TemplateSpec'][P]
   };
 
   /**
@@ -71,8 +76,8 @@ declare namespace Component {
    * All TemplateSpec properties are made optional. Nested TemplateSpec properties are also made
    * optional, except for the `type` propety which is made required.
    */
-   export type Template<TemplateSpecType extends Element.TemplateSpecStrong = Component.TemplateSpecLoose> = {
-    [P in keyof TemplateSpecType]?:
+   export type Template<TemplateSpecType extends Element.TemplateSpecLoose = Component.TemplateSpecLoose> = {
+    [P in keyof Omit<TemplateSpecType, DollarProp>]?:
       P extends ValidRef
         ?
           TemplateSpecType[P] extends Component.Constructor
@@ -85,16 +90,12 @@ declare namespace Component {
                 :
                   Template<Element<InlineElement<TemplateSpecType[P]>>['__$type_TemplateSpec']>
         :
-          P extends keyof Element.TemplateSpecStrong
+          P extends keyof Element.TemplateSpecLoose
             ?
-              TemplateSpecType[P] // P is a Element property key
+              TemplateSpecType[P]
             :
-              string extends P
-                ?
-                  any // Support Loose Elements: keyof loose Elements `P` will always be a `string`, so let anything go
-                :
-                  undefined // Otherwise allow the property to only be undefined
-  };
+              undefined
+  } & (IsLoose<TemplateSpecType> extends true ? { [s: string]: any } : {});
 
   /**
    * Converts a TemplateSpec into an interface that is implemented by a Component class
@@ -118,9 +119,9 @@ declare namespace Component {
    * }
    * ```
    */
-  export type ImplementTemplateSpec<TemplateSpecType extends Component.TemplateSpecStrong> = {
-    [P in keyof TemplateSpecType as P extends keyof Component.TemplateSpecStrong ? never : P]:
-      Element.TransformPossibleElement<P, TemplateSpecType[P]>
+  export type ImplementTemplateSpec<TemplateSpecType extends Component.TemplateSpecLoose> = {
+    [P in keyof Omit<TemplateSpecType, ValidRef | keyof Component.TemplateSpecLoose>]:
+      TemplateSpecType[P]
   };
   /**
    * Extracts the input Component's TemplateSpec value
@@ -154,13 +155,10 @@ declare namespace Component {
 
 declare class Component<
   // Components use loose typing TemplateSpecs by default
-  TemplateSpecType extends Component.TemplateSpecLoose = Component.TemplateSpecLoose,
-  EventMap extends Element.EventMap = Element.EventMap
+  TemplateSpecType extends Component.TemplateSpecLoose = Component.TemplateSpecLoose
 > extends Element<
-  TemplateSpecType,
-  Texture,
-  EventMap
-> {
+  TemplateSpecType
+>  implements Documentation<Component.TemplateSpecLoose> {
   // SDK ??? !!!
   static getFonts(): Component.Font[]; // Should be app only?
   _onDataProvided(): void;
@@ -188,7 +186,7 @@ declare class Component<
   _getState(): string;
   $enter(event: Component.StateMachineEvent, ...extraArgs: unknown[]): void;
   $exit(event: Component.StateMachineEvent, ...extraArgs: unknown[]): void;
-  get _routedType(): Component<Component.TemplateSpecStrong> | undefined;
+  // get _routedType(): Component<Component.TemplateSpecStrong> | undefined;
 
   /**
    * Internal property that is set to `true` after {@link _init} is called.

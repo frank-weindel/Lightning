@@ -3,8 +3,10 @@ import AnimationSettings from "../animation/AnimationSettings.mjs";
 import Transition from "../animation/Transition.mjs";
 import TransitionSettings from "../animation/TransitionSettings.mjs";
 import Component from "../application/Component.mjs";
+import ListComponent from "../components/ListComponent.mjs";
 import EventEmitter from "../EventEmitter.mjs";
 import TextTexture from "../textures/TextTexture.mjs";
+import { Documentation, DollarProp } from "../types/internalTypes.js";
 import ElementCore from "./core/ElementCore.mjs";
 import ElementTexturizer from "./core/ElementTexturizer.mjs";
 import ElementChildList from "./ElementChildList.mjs";
@@ -97,46 +99,54 @@ declare namespace Element {
   }
 
   /**
+   * Types animations are allowed on
+   */
+  export type AnimatableValueTypes = number | string | boolean;
+
+  /**
    * An object keyed by transitionable Element properties (numeric properties)
    * and valued by {@link lng.types.TransitionSettings.Literal}
    */
-  export type TransitionsTemplate<TemplateSpecType = TemplateSpecStrong> = {
-    [P in keyof TemplateSpecType]?:
-      number extends TemplateSpecType[P]
+  export type TransitionsTemplate<TemplateSpecType extends TemplateSpecLoose = TemplateSpecLoose> = {
+    [P in keyof TemplateSpecProps<TemplateSpecType>]?: TransitionSettings.Literal
+  } & (IsLoose<TemplateSpecType> extends true ? { [s: string]: TransitionSettings.Literal } : {});
+
+  export type AnimatableTemplateSpecProps<TemplateSpecType extends TemplateSpecLoose = TemplateSpecLoose> = {
+    [P in keyof TemplateSpecProps<TemplateSpecType>]:
+      Extract<TemplateSpecType[P], AnimatableValueTypes> extends AnimatableValueTypes
         ?
-          TransitionSettings.Literal
+          Extract<TemplateSpecType[P], AnimatableValueTypes>
         :
           never
-  };
+  } & (IsLoose<TemplateSpecType> extends true ? { [s: string]: AnimatableValueTypes } : {});
 
   /**
-   * An object keyed by transitionable Element properties (numeric properties).
+   * An object keyed by Element properties
    *
    * @remarks
    * For each property:
-   * - If the value is a `number`:
+   * - If the value is a property value type:
    *   - Property value to smoothly transition to (using the default transition)
    * - If the value is a 2-value array:
    *   - array[0] = Property value to smoothly transition to
    *   - array[1] = Settings describing the transition
    */
-  export type SmoothTemplate<LT = TemplateSpecStrong> = {
-    [P in keyof LT]?:
-      number extends LT[P]
+  export type SmoothTemplate<TemplateSpecType extends TemplateSpecLoose = TemplateSpecLoose> = {
+    [P in keyof AnimatableTemplateSpecProps<TemplateSpecType>]?:
+      AnimatableTemplateSpecProps<TemplateSpecType> extends never
         ?
-          number | [ number, TransitionSettings.Literal ]
-        :
           never
-  };
+        :
+          AnimatableTemplateSpecProps<TemplateSpecType>[P]| [ AnimatableTemplateSpecProps<TemplateSpecType>[P], TransitionSettings.Literal ]
+  };// & (IsLoose<TemplateSpecType> extends true ? { [s: string]: AnimatableValueTypes | [ AnimatableValueTypes, TransitionSettings.Literal ] | undefined } : {}); // !!!! functionalize
 
-  /**
-   * Valid numeric property keys from SmoothTemplate
-   */
-  export type SmoothTemplateKeys<LT = TemplateSpecStrong> = keyof {
-    [P in keyof SmoothTemplate<LT> as SmoothTemplate<LT>[P] extends undefined ? never : P]: SmoothTemplate<LT>[P]
-  };
+  export interface TemplateSpecLoose {
+    //// SPECIAL TYPES
+    $strong: boolean | undefined;
+    $texture: typeof Texture | undefined;
+    $shader: typeof Shader | undefined;
+    $events: EventMap | undefined;
 
-  export interface TemplateSpecStrong {
     /**
      * ???
      */
@@ -672,16 +682,16 @@ declare namespace Element {
   }
 
   /**
-   * Loose form of lng.Element.TemplateSpecStrong that allows any additional 'any' properties
+   * Strong form of lng.Element.TemplateSpecStrong that does not allow unknown properties
    */
-  export interface TemplateSpecLoose extends Element.TemplateSpecStrong {
-    [s: string]: any
+  export interface TemplateSpecStrong extends TemplateSpecLoose {
+    $strong: true
   }
 
   /**
    * Type used for patching an array of Elements/Compnents
    */
-  export type PatchTemplateArray<T extends Element.Constructor = typeof Element> =
+  export type PatchTemplateArray<T extends Element.Constructor = Element.Constructor> =
     T extends Component.Constructor
       ?
         Array<Component.NewPatchTemplate<T>>
@@ -693,8 +703,8 @@ declare namespace Element {
    *
    * All TemplateSpec properties are made optional, including properties of nested TemplateSpecs.
    */
-   export type PatchTemplate<TemplateSpecType extends Element.TemplateSpecStrong = Element.TemplateSpecLoose> = {
-    [P in keyof TemplateSpecType]?:
+  export type PatchTemplate<TemplateSpecType extends Element.TemplateSpecLoose = Element.TemplateSpecLoose> = {
+    [P in keyof Omit<TemplateSpecType, DollarProp>]?:
       P extends ValidRef
         ?
           TemplateSpecType[P] extends Component.Constructor
@@ -708,7 +718,7 @@ declare namespace Element {
                   PatchTemplate<InlineElement<TemplateSpecType[P]>>
         :
           TemplateSpecType[P]
-  };
+  } & (IsLoose<TemplateSpecType> extends true ? { [s: string]: any } : {}); // !!! Functionalize
 
   /**
    * If `PossibleElementConstructor` is an inline Element or a Component Constructor, convert it to it's instantiated form.
@@ -717,28 +727,31 @@ declare namespace Element {
    * @internal
    * @hidden
    */
-  export type TransformPossibleElement<Key, PossibleElementConstructor, Default = PossibleElementConstructor> =
-    string extends Key
+  export type TransformPossibleElement<PossibleElementConstructor> =
+    PossibleElementConstructor extends Element.Constructor
       ?
-        any // Support Loose Elements: keyof loose Elements `P` will always be a `string`, so let anything go
+        InstanceType<PossibleElementConstructor>
       :
-        Key extends ValidRef // Support Strong Elements
-          ?
-            PossibleElementConstructor extends Element.Constructor
-              ?
-                InstanceType<PossibleElementConstructor>
-              :
-                Element<InlineElement<PossibleElementConstructor>>
-          :
-            Default;
+        Element<InlineElement<PossibleElementConstructor>>
+
+  type Test1<B extends Component.Constructor> = B;
+  type Test2<B extends Element.Constructor> = B;
+
+  type Test1_A = Test1<typeof ListComponent>;
+  type Test2_A = Test2<typeof ListComponent>;
+
 
   /**
    * Get an object containing all the Refs (child Element / Components) in a TemplateSpec
    */
-  export type TemplateSpecRefs<TemplateSpec extends Element.TemplateSpecStrong> = {
-    [P in keyof TemplateSpec as TransformPossibleElement<P, TemplateSpec[P], never> extends never ? never : P]:
-      TransformPossibleElement<P, TemplateSpec[P], never>
-  };
+  export type TemplateSpecRefs<TemplateSpecType extends Element.TemplateSpecLoose> = {
+    [P in keyof Pick<TemplateSpecType, Extract<keyof TemplateSpecType, ValidRef>>]:
+      TransformPossibleElement<TemplateSpecType[P]>
+  } & (IsLoose<TemplateSpecType> extends true ? { [s: string]: any } : {});
+
+  export type TemplateSpecProps<TemplateSpecType extends Element.TemplateSpecLoose> =
+    Omit<TemplateSpecType, DollarProp | ValidRef>;
+
 
   /**
    * Extracts the input Element's TemplateSpec value
@@ -766,19 +779,34 @@ declare namespace Element {
   }
 }
 
+type EventMapType<TemplateSpecType extends Element.TemplateSpecLoose> =
+  TemplateSpecType['$events'] extends Element.EventMap
+    ?
+      TemplateSpecType['$events']
+    :
+      Element.EventMap;
+
+type TextureType<TemplateSpecType extends Element.TemplateSpecLoose> =
+  TemplateSpecType['$texture'] extends Texture
+    ?
+      TemplateSpecType['$texture']
+    :
+      Texture;
+
 /**
- * Allows all the documentation of Element.TemplateSpecStrong to be inherited by Element
+ * Returns `true` if the TemplateSpecType is loose
  */
-type Documentation = {
-  [s in keyof Element.TemplateSpecStrong]: unknown;
-}
+export type IsLoose<TemplateSpecType extends Element.TemplateSpecLoose> =
+  TemplateSpecType['$strong'] extends true
+    ?
+      false
+    :
+      true;
 
 declare class Element<
   // Elements use loose typing TemplateSpecs by default (for use of use as Elements aren't often fully definable)
-  TemplateSpecType extends Element.TemplateSpecLoose = Element.TemplateSpecLoose,
-  TextureType extends Texture = Texture,
-  EventMap extends Element.EventMap = Element.EventMap
-> extends EventEmitter<EventMap> implements Documentation {
+  TemplateSpecType extends Element.TemplateSpecLoose = Element.TemplateSpecLoose
+> extends EventEmitter<EventMapType<TemplateSpecType>> implements Documentation<Element.TemplateSpecLoose> {
   constructor(stage: Stage);
 
   readonly id: number;
@@ -960,14 +988,14 @@ declare class Element<
    *
    * @see {@link Element.TemplateSpecStrong.texture}
    */
-  get texture(): TextureType | null;
-  set texture(v: TextureType | Texture.Literal | null);
+  get texture(): TextureType<TemplateSpecType> | null;
+  set texture(v: TextureType<TemplateSpecType> | Texture.Literal | null);
 
   /**
    * The currently displayed texture. While this.texture is loading,
    * this one may be different.
    */
-  readonly displayedTexture: TextureType | null;
+  readonly displayedTexture: TextureType<TemplateSpecType> | null;
 
   // onTextureSourceLoaded() {
   // - Internal use only. Calling/overriding this can break things
@@ -1032,8 +1060,9 @@ declare class Element<
    *
    * @param ref
    */
-  getByRef<RefKey extends keyof Element.TemplateSpecRefs<TemplateSpecType>>(ref: RefKey): Element.TemplateSpecRefs<TemplateSpecType>[RefKey] | undefined;
-
+  getByRef<
+    RefKey extends keyof Element.TemplateSpecRefs<TemplateSpecType>
+  >(ref: RefKey): Element.TemplateSpecRefs<TemplateSpecType>[RefKey] | undefined;
   /**
    * Get the location identifier of this Element???
    */
@@ -1338,8 +1367,8 @@ declare class Element<
    *
    * @param property
    */
-  fastForward<Key extends keyof Element.SmoothTemplate<TemplateSpecType>>(
-    property: number extends TemplateSpecType[Key] ? Key : never
+  fastForward<Key extends keyof Element.AnimatableTemplateSpecProps<TemplateSpecType>>(
+    property: Element.AnimatableTemplateSpecProps<TemplateSpecType>[Key] extends never ? never : Key
   ): void;
 
   /**
@@ -1361,13 +1390,13 @@ declare class Element<
    * @param property
    * @param value
    */
-  getSmooth<Key extends keyof Element.SmoothTemplate<TemplateSpecType>>(
-    property: number extends TemplateSpecType[Key] ? Key : never
-  ): number | undefined;
-  getSmooth<Key extends keyof Element.SmoothTemplate<TemplateSpecType>>(
+  getSmooth<Key extends keyof Element.AnimatableTemplateSpecProps<TemplateSpecType>>(
+    property: Key
+  ): Element.AnimatableTemplateSpecProps<TemplateSpecType>[Key] | undefined;
+  getSmooth<Key extends keyof Element.AnimatableTemplateSpecProps<TemplateSpecType>>(
     property: Key,
-    value: number extends TemplateSpecType[Key] ? number : never,
-  ): number extends TemplateSpecType[Key] ? number : never;
+    value: Element.AnimatableTemplateSpecProps<TemplateSpecType>[Key],
+  ): Element.AnimatableTemplateSpecProps<TemplateSpecType>[Key];
 
   /**
    * Start a smooth transition of `property` to the target `value`. Optionally
@@ -1387,9 +1416,9 @@ declare class Element<
    * @param value Target value
    * @param settings Transition settings
    */
-  setSmooth<Key extends keyof Element.SmoothTemplate<TemplateSpecType>>(
+  setSmooth<Key extends keyof Element.AnimatableTemplateSpecProps<TemplateSpecType>>(
     property: Key,
-    value: number extends TemplateSpecType[Key] ? number : never,
+    value: Element.AnimatableTemplateSpecProps<TemplateSpecType>[Key],
     settings?: TransitionSettings.Literal,
   ): void;
 

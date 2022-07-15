@@ -75,6 +75,11 @@ function TransformPossibleElement_Test() {
     >
   >({} as T300);
   // Component
+  type C = lng.components.FastBlurComponent['getSmooth'];
+  type A = InstanceType<typeof lng.components.FastBlurComponent>;
+  type B = InstanceType<lng.Element.Constructor>;
+
+  type ABC = typeof lng.components.FastBlurComponent extends lng.Component.Constructor ? true : false;
   type T400 = lng.Element.TransformPossibleElement<'ValidRef', TestTemplateSpec['MyListComponent']>;
   expectType<lng.components.ListComponent>({} as T400);
   // Strong Element (implicit inline, children)

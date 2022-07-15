@@ -8,7 +8,8 @@ declare namespace Application {
     // !!!
   }
 
-  interface TemplateSpec extends Component.TemplateSpecStrong {
+  interface TemplateSpec extends Component.TemplateSpecLoose {
+    $events: EventMap
   }
 
   interface EventMap extends Element.EventMap {
@@ -16,7 +17,7 @@ declare namespace Application {
   }
 }
 
-declare class Application extends Component<Application.TemplateSpec, Application.EventMap> implements EventEmitter<Application.EventMap> {
+declare class Application extends Component<Application.TemplateSpec> implements EventEmitter<Application.EventMap> {
   constructor(appSettings: Application.Settings);
   get focusPath(): Element[] | undefined;
   updateFocusPath(): void;
