@@ -25,8 +25,6 @@ export default class WebGLCoreRenderExecutor extends CoreRenderExecutor {
         super(ctx)
 
         this.gl = this.ctx.stage.gl;
-
-        this.init();
     }
 
     init() {
@@ -38,10 +36,11 @@ export default class WebGLCoreRenderExecutor extends CoreRenderExecutor {
         let maxQuads = Math.floor(this.renderState.quads.data.byteLength / 80);
 
         // Init webgl arrays.
-        let allIndices = new Uint16Array(maxQuads * 6);
+        let lenAllIndices = maxQuads * 6;
+        let allIndices = new Uint16Array(lenAllIndices);
 
         // fill the indices with the quads to draw.
-        for (let i = 0, j = 0; i < maxQuads; i += 6, j += 4) {
+        for (let i = 0, j = 0; i < lenAllIndices; i += 6, j += 4) {
             allIndices[i] = j;
             allIndices[i + 1] = j + 1;
             allIndices[i + 2] = j + 2;
