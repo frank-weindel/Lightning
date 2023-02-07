@@ -19,7 +19,7 @@
 
 import StageUtils from "../tree/StageUtils.mjs";
 import Utils from "../tree/Utils.mjs";
-import { getFontSetting } from "./TextTextureRendererUtils.mjs";
+import { getFontSetting } from "./TextTextureRendererUtils.js";
 
 export default class TextTextureRendererAdvanced {
 

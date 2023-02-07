@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { getFontSetting } from './TextTextureRendererUtils.mjs';
+import { getFontSetting } from './TextTextureRendererUtils.js';
 
 describe('TextTextureRendererUtils', () => {
   describe('getFontSetting', () => {
