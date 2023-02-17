@@ -1,6 +1,6 @@
 {
   "include": [
-    "**/*.d.mts", "**/*.d.ts", "**/*.ts", "**/*.mjs"
+    "./vite.config.js", "**/*.d.mts", "**/*.d.ts", "**/*.ts", "**/*.mjs"
   ],
   "compilerOptions": {
     "lib": ["ES2018", "DOM"],
