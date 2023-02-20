@@ -5,16 +5,17 @@
   "license": "Apache-2.0",
   "main": "dist/lightning.js",
   "module": "index.js",
+  "type": "module",
   "types": "index.d.ts",
   "exports": {
     ".": {
       "import": {
         "types": "./index.d.ts",
-        "default": "./index.js"
+        "default": "./dist/index.js"
       },
       "require": {
         "types": "./index.d.ts",
-        "default": "./dist/lightning.js"
+        "default": "./dist-vite/lightning.js"
       }
     },
     "./package.json": "./package.json"
@@ -53,6 +54,7 @@
     "@babel/preset-env": "^7.8.3",
     "@rollup/plugin-babel": "^6.0.3",
     "@rollup/plugin-terser": "^0.3.0",
+    "@types/node": "^18.14.0",
     "@vitejs/plugin-legacy": "^3.0.1",
     "chai": "^4.2.0",
     "concurrently": "^7.6.0",
@@ -66,6 +68,7 @@
     "tsd": "^0.21.0",
     "typedoc": "^0.23.10",
     "vite": "^4.0.4",
+    "vite-plugin-dts": "^2.0.0-beta.2",
     "vitest": "^0.27.2"
   }
 }
