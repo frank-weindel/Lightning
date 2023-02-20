@@ -3,7 +3,6 @@
     "index.js", "index.d.ts", "src/**/*.d.mts", "src/**/*.d.ts", "src/**/*.ts", "src/**/*.mjs"
   ],
   "compilerOptions": {
-    "noEmit": true,
     "lib": ["ES2018", "DOM"],
     "outDir": "types",
     "sourceMap": true,
